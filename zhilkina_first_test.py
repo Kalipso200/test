@@ -92,7 +92,6 @@ class TestFBank:
         current_url = self.driver.current_url
         assert "localhost" in current_url or "3000" in current_url
         
-        # Переходим по URL вместо использования refresh
         self.driver.get("http://localhost:3000")
         
         # Проверяем, что страница загрузилась после навигации
