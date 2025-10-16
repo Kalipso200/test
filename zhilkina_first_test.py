@@ -1,3 +1,4 @@
+# test_fbank.py
 import pytest
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -18,28 +19,28 @@ class TestFBank:
         self.driver.quit()
 
     def test_1_page_loading(self, setup):
-        """Test 1: Page loading and basic elements"""
-        # Check page title
+        """Тест 1: Загрузка страницы и основные элементы"""
+        # Проверяем заголовок страницы
         assert "F-Bank" in self.driver.title
 
-        # Check root element presence
+        # Проверяем наличие корневого элемента
         root_element = self.wait.until(
             EC.presence_of_element_located((By.ID, "root"))
         )
         assert root_element.is_displayed()
 
-        # Wait for application content to load using explicit wait
+        # Ждем загрузки контента приложения с использованием явного ожидания
         self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#root > *"))
         )
         
-        # Check content inside root
+        # Проверяем наличие контента внутри root
         app_content = self.driver.find_elements(By.CSS_SELECTOR, "#root > *")
         assert len(app_content) > 0
 
     def test_2_interface_display(self, setup):
-        """Test 2: Interface elements display"""
-        # Check main interface elements with explicit waits
+        """Тест 2: Отображение элементов интерфейса"""
+        # Проверяем основные элементы интерфейса с явными ожиданиями
         elements_to_check = [
             (By.TAG_NAME, "header"),
             (By.TAG_NAME, "main"), 
@@ -53,49 +54,49 @@ class TestFBank:
             assert element.is_displayed()
 
     def test_3_button_interaction(self, setup):
-        """Test 3: Button interaction"""
-        # Find all buttons on page
+        """Тест 3: Взаимодействие с кнопками"""
+        # Ищем все кнопки на странице
         buttons = self.wait.until(
             EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
         )
         assert len(buttons) > 0
         
-        # Check that buttons are clickable
-        for button in buttons[:2]:  # Check first 2 buttons
+        # Проверяем, что кнопки кликабельны
+        for button in buttons[:2]:  # Проверяем первые 2 кнопки
             assert button.is_displayed()
             assert button.is_enabled()
 
     def test_4_input_fields(self, setup):
-        """Test 4: Input fields verification"""
-        # Find input fields
+        """Тест 4: Проверка полей ввода"""
+        # Ищем поля ввода
         inputs = self.wait.until(
             EC.presence_of_all_elements_located((By.TAG_NAME, "input"))
         )
         
         if len(inputs) > 0:
-            # Check first input field
+            # Проверяем первое поле ввода
             input_field = inputs[0]
             assert input_field.is_displayed()
             assert input_field.is_enabled()
             
-            # Test text input
+            # Тестируем ввод текста
             test_text = "test"
             input_field.clear()
             input_field.send_keys(test_text)
             
-            # Verify text was entered
+            # Проверяем, что текст введен
             assert input_field.get_attribute("value") == test_text
 
     def test_5_page_navigation(self, setup):
-        """Test 5: Page navigation"""
-        # Check current URL
+        """Тест 5: Навигация по странице"""
+        # Проверяем текущий URL
         current_url = self.driver.current_url
         assert "localhost" in current_url or "3000" in current_url
         
-        # Navigate to the same URL instead of refresh
+        # Переходим по URL вместо использования refresh
         self.driver.get("http://localhost:3000")
         
-        # Verify page loaded after navigation
+        # Проверяем, что страница загрузилась после навигации
         root_element = self.wait.until(
             EC.presence_of_element_located((By.ID, "root"))
         )
