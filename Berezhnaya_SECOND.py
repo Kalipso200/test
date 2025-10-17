@@ -23,7 +23,7 @@ class FBankAutotests:
             self.wait = WebDriverWait(self.driver, 10)
             return True
         except Exception as e:
-            print(f"Ошибка запуска браузера: {e}")
+            print(f"Browser startup error: {e}")
             return False
 
     def teardown(self):
@@ -31,7 +31,7 @@ class FBankAutotests:
             self.driver.quit()
 
     def log_test_result(self, test_id, test_name, passed, details=""):
-        status = "ПРОЙДЕН" if passed else "НЕ ПРОЙДЕН"
+        status = "PASSED" if passed else "FAILED"
         result = f"{test_id}: {test_name} - {status}"
         if details:
             result += f" | {details}"
@@ -62,7 +62,7 @@ class FBankAutotests:
                 try:
                     element = self.wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
                     element.click()
-                    time.sleep(2)
+                    self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input")))
                     return True
                 except:
                     continue
@@ -83,7 +83,6 @@ class FBankAutotests:
                     card_input = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                     card_input.clear()
                     card_input.send_keys(card_number)
-                    time.sleep(1)
                     return True
                 except:
                     continue
@@ -105,7 +104,6 @@ class FBankAutotests:
                     placeholder = amount_input.get_attribute('placeholder') or ''
                     if placeholder == '1000' or '1000' in placeholder:
                         amount_input.click()
-                        time.sleep(1)
                         return True
                 except:
                     continue
@@ -115,7 +113,6 @@ class FBankAutotests:
                 if len(all_inputs) >= 2:
                     amount_input = all_inputs[1]
                     amount_input.click()
-                    time.sleep(1)
                     return True
             except:
                 pass
@@ -128,7 +125,7 @@ class FBankAutotests:
         try:
             if not self.enter_card_number(card_number):
                 return False
-            time.sleep(2)
+            self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='text']")))
             return self.find_and_focus_amount_field()
         except Exception as e:
             return False
@@ -139,11 +136,9 @@ class FBankAutotests:
                 return False
             active_element = self.driver.switch_to.active_element
             active_element.clear()
-            time.sleep(0.5)
             active_element.send_keys(amount)
-            time.sleep(2)
-            entered_value = active_element.get_attribute('value')
-            return entered_value == amount
+            self.wait.until(lambda driver: active_element.get_attribute('value') == amount)
+            return active_element.get_attribute('value') == amount
         except Exception as e:
             return False
 
@@ -182,58 +177,53 @@ class FBankAutotests:
 
     def test_006_available_amount_calculation(self):
         print("\n" + "=" * 70)
-        print("ТЕСТ FBT-006: Расчет доступной суммы с комиссией")
+        print("TEST FBT-006: Available amount calculation with commission")
         print("=" * 70)
 
         try:
             if not self.check_balance_display():
-                return self.log_test_result("FBT-006", "Отображение баланса", False,
-                                            "Баланс 30'000 или резерв 20'001 не найдены")
+                return self.log_test_result("FBT-006", "Balance display", False, "Balance 30'000 or reserve 20'001 not found")
 
             if not self.open_transfer_form():
-                return self.log_test_result("FBT-006", "Открытие формы", False, "Не удалось открыть форму перевода")
+                return self.log_test_result("FBT-006", "Form opening", False, "Failed to open transfer form")
 
             if not self.enter_card_number_and_proceed():
-                return self.log_test_result("FBT-006", "Ввод карты и переход", False,
-                                            "Не удалось ввести карту или перейти к сумме")
+                return self.log_test_result("FBT-006", "Card input and proceed", False, "Failed to enter card or proceed to amount")
 
             if not self.enter_amount("9999"):
-                return self.log_test_result("FBT-006", "Ввод суммы", False, "Не удалось ввести сумму")
+                return self.log_test_result("FBT-006", "Amount input", False, "Failed to enter amount")
 
             commission_value = self.get_commission_value()
             actual_available = 9999 - commission_value
 
-            print("Фактический результат:")
-            print(f"- Сумма на счету: 30000 ₽ - ВЕРНО")
-            print(f"- Резерв: 20001 ₽ - ВЕРНО")
-            print(f"- Доступно без комиссии: 9999 ₽ - ВЕРНО")
-            print(
-                f"- Комиссия для 9999 ₽: {commission_value} ₽ (вместо 999) - {'ВЕРНО' if commission_value == 999 else 'НЕВЕРНО'}")
-            print(
-                f"- Фактическая доступная сумма: 9098 ₽ (вместо 9000) - {'ВЕРНО' if actual_available == 9000 else 'НЕВЕРНО'}")
+            print("Actual result:")
+            print(f"- Account balance: 30000 RUB - CORRECT")
+            print(f"- Reserve: 20001 RUB - CORRECT")
+            print(f"- Available without commission: 9999 RUB - CORRECT")
+            print(f"- Commission for 9999 RUB: {commission_value} RUB (instead of 999) - {'CORRECT' if commission_value == 999 else 'INCORRECT'}")
+            print(f"- Actual available amount: {actual_available} RUB (instead of 9000) - {'CORRECT' if actual_available == 9000 else 'INCORRECT'}")
 
             if commission_value == 900:
-                return self.log_test_result("FBT-006", "Расчет комиссии", False, "Комиссия 900 ₽ вместо 999 ₽ - БАГ")
+                return self.log_test_result("FBT-006", "Commission calculation", False, "Commission 900 RUB instead of 999 RUB - BUG")
             elif commission_value == 999:
-                return self.log_test_result("FBT-006", "Расчет комиссии", True, "Комиссия 999 ₽ - корректно")
+                return self.log_test_result("FBT-006", "Commission calculation", True, "Commission 999 RUB - correct")
             else:
-                return self.log_test_result("FBT-006", "Расчет комиссии", False,
-                                            f"Комиссия {commission_value} ₽ вместо 999 ₽")
+                return self.log_test_result("FBT-006", "Commission calculation", False, f"Commission {commission_value} RUB instead of 999 RUB")
 
         except Exception as e:
-            return self.log_test_result("FBT-006", "Выполнение теста", False, f"Ошибка: {e}")
+            return self.log_test_result("FBT-006", "Test execution", False, f"Error: {e}")
 
     def test_007_actual_available_amount(self):
         print("\n" + "=" * 70)
-        print("ТЕСТ FBT-007: Фактическая доступная сумма")
+        print("TEST FBT-007: Actual available amount")
         print("=" * 70)
 
         try:
             if not self.open_transfer_form():
-                return self.log_test_result("FBT-007", "Открытие формы", False, "Не удалось открыть форму")
+                return self.log_test_result("FBT-007", "Form opening", False, "Failed to open form")
 
             if not self.enter_card_number_and_proceed():
-                return self.log_test_result("FBT-007", "Ввод карты", False, "Не удалось ввести карту")
+                return self.log_test_result("FBT-007", "Card input", False, "Failed to enter card")
 
             self.enter_amount("9098")
             transfer_possible_9098 = self.is_transfer_possible()
@@ -248,35 +238,32 @@ class FBankAutotests:
             self.enter_amount("9098")
             commission_9098 = self.get_commission_value()
 
-            print("Фактический результат:")
-            print(f"- Сумма 9098 ₽: кнопка 'Перевести' активна - {'ВЕРНО' if transfer_possible_9098 else 'НЕВЕРНО'}")
-            print(
-                f"- Сумма 9099 ₽: сообщение 'Недостаточно средств' - {'ВЕРНО' if transfer_blocked_9099 else 'НЕВЕРНО'}")
-            print(f"- Сумма 9097 ₽: кнопка 'Перевести' активна - {'ВЕРНО' if transfer_possible_9097 else 'НЕВЕРНО'}")
-            print(
-                f"- Комиссия для 9098 ₽: {commission_9098} ₽ - {'ВЕРНО' if commission_9098 == 900 else 'НЕВЕРНО'} (но алгоритм расчета неверный)")
+            print("Actual result:")
+            print(f"- Amount 9098 RUB: transfer button active - {'CORRECT' if transfer_possible_9098 else 'INCORRECT'}")
+            print(f"- Amount 9099 RUB: 'Insufficient funds' message - {'CORRECT' if transfer_blocked_9099 else 'INCORRECT'}")
+            print(f"- Amount 9097 RUB: transfer button active - {'CORRECT' if transfer_possible_9097 else 'INCORRECT'}")
+            print(f"- Commission for 9098 RUB: {commission_9098} RUB - {'CORRECT' if commission_9098 == 900 else 'INCORRECT'} (but calculation algorithm is incorrect)")
 
             if transfer_possible_9098 and transfer_blocked_9099 and transfer_possible_9097:
-                return self.log_test_result("FBT-007", "Логика доступной суммы", True,
-                                            "Частично пройден - логика работает, но основана на неправильном расчете комиссии")
+                return self.log_test_result("FBT-007", "Available amount logic", True, "Partially passed - logic works but based on incorrect commission calculation")
             else:
                 details = f"9098: {transfer_possible_9098}, 9099: {transfer_blocked_9099}, 9097: {transfer_possible_9097}"
-                return self.log_test_result("FBT-007", "Логика доступной суммы", False, f"Ошибка в логике: {details}")
+                return self.log_test_result("FBT-007", "Available amount logic", False, f"Logic error: {details}")
 
         except Exception as e:
-            return self.log_test_result("FBT-007", "Выполнение теста", False, f"Ошибка: {e}")
+            return self.log_test_result("FBT-007", "Test execution", False, f"Error: {e}")
 
     def test_008_commission_calculation(self):
         print("\n" + "=" * 70)
-        print("ТЕСТ FBT-008: Расчет комиссии для различных сумм")
+        print("TEST FBT-008: Commission calculation for various amounts")
         print("=" * 70)
 
         try:
             if not self.open_transfer_form():
-                return self.log_test_result("FBT-008", "Открытие формы", False, "Не удалось открыть форму")
+                return self.log_test_result("FBT-008", "Form opening", False, "Failed to open form")
 
             if not self.enter_card_number_and_proceed():
-                return self.log_test_result("FBT-008", "Ввод карты", False, "Не удалось ввести карту")
+                return self.log_test_result("FBT-008", "Card input", False, "Failed to enter card")
 
             test_cases = [
                 ("1000", 100),
@@ -286,7 +273,7 @@ class FBankAutotests:
                 ("100", 10)
             ]
 
-            print("Фактический результат:")
+            print("Actual result:")
             errors_found = 0
 
             for amount, expected_commission in test_cases:
@@ -294,9 +281,9 @@ class FBankAutotests:
                 actual_commission = self.get_commission_value()
                 is_correct = (actual_commission == expected_commission)
 
-                status = "ВЕРНО" if is_correct else "НЕВЕРНО"
-                comment = f"(вместо {expected_commission})" if not is_correct else ""
-                print(f"- Сумма {amount} ₽: комиссия {actual_commission} ₽ - {status} {comment}")
+                status = "CORRECT" if is_correct else "INCORRECT"
+                comment = f"(instead of {expected_commission})" if not is_correct else ""
+                print(f"- Amount {amount} RUB: commission {actual_commission} RUB - {status} {comment}")
 
                 if not is_correct:
                     errors_found += 1
@@ -304,34 +291,32 @@ class FBankAutotests:
             self.enter_amount("9999")
             commission_9999 = self.get_commission_value()
             is_9999_correct = (commission_9999 == 999)
-            status_9999 = "ВЕРНО" if is_9999_correct else "НЕВЕРНО"
-            comment_9999 = f"(вместо 999)" if not is_9999_correct else ""
-            print(f"- Сумма 9999 ₽: комиссия {commission_9999} ₽ - {status_9999} {comment_9999}")
+            status_9999 = "CORRECT" if is_9999_correct else "INCORRECT"
+            comment_9999 = f"(instead of 999)" if not is_9999_correct else ""
+            print(f"- Amount 9999 RUB: commission {commission_9999} RUB - {status_9999} {comment_9999}")
 
             if not is_9999_correct:
                 errors_found += 1
 
             if errors_found == 0:
-                return self.log_test_result("FBT-008", "Расчет комиссии", True, "Все комиссии рассчитываются корректно")
+                return self.log_test_result("FBT-008", "Commission calculation", True, "All commissions calculated correctly")
             else:
-                return self.log_test_result("FBT-008", "Расчет комиссии", False,
-                                            "Комиссия рассчитывается некорректно для большинства сумм - используется неправильный алгоритм расчета (округление до десятков)")
+                return self.log_test_result("FBT-008", "Commission calculation", False, "Commission calculated incorrectly for most amounts - uses wrong calculation algorithm (rounding to tens)")
 
         except Exception as e:
-            return self.log_test_result("FBT-008", "Выполнение теста", False, f"Ошибка: {e}")
+            return self.log_test_result("FBT-008", "Test execution", False, f"Error: {e}")
 
     def test_009_commission_rounding(self):
         print("\n" + "=" * 70)
-        print("ТЕСТ FBT-009: Алгоритм округления комиссии")
+        print("TEST FBT-009: Commission rounding algorithm")
         print("=" * 70)
 
         try:
             if not self.open_transfer_form():
-                return self.log_test_result("FBT-009", "Открытие формы", False, "Не удалось открыть форму")
+                return self.log_test_result("FBT-009", "Form opening", False, "Failed to open form")
 
             if not self.enter_card_number_and_proceed():
-                return self.log_test_result("FBT-009", "Ввод карты и переход", False,
-                                            "Не удалось ввести карту или перейти к сумме")
+                return self.log_test_result("FBT-009", "Card input and proceed", False, "Failed to enter card or proceed to amount")
 
             test_cases = [
                 ("104", 10),
@@ -348,43 +333,41 @@ class FBankAutotests:
                 commission_correct = (actual_commission == expected_commission)
 
                 if not commission_correct and amount in ["110", "149"]:
-                    print(f"БАГ: Сумма {amount} ₽ - комиссия {actual_commission} ₽ вместо {expected_commission} ₽")
+                    print(f"BUG: Amount {amount} RUB - commission {actual_commission} RUB instead of {expected_commission} RUB")
                     pattern_detected = True
                 else:
-                    print(f"Сумма {amount} ₽: комиссия {expected_commission} ₽ - OK")
+                    print(f"Amount {amount} RUB: commission {expected_commission} RUB - OK")
 
             if pattern_detected:
-                return self.log_test_result("FBT-009", "Алгоритм округления", False,
-                                            "Выявлен баг округления до десятков")
+                return self.log_test_result("FBT-009", "Rounding algorithm", False, "Detected bug - rounding to tens")
             else:
-                return self.log_test_result("FBT-009", "Алгоритм округления", True, "Округление работает корректно")
+                return self.log_test_result("FBT-009", "Rounding algorithm", True, "Rounding works correctly")
 
         except Exception as e:
-            return self.log_test_result("FBT-009", "Выполнение теста", False, f"Ошибка: {e}")
+            return self.log_test_result("FBT-009", "Test execution", False, f"Error: {e}")
 
     def test_010_validation_boundary_values(self):
         print("\n" + "=" * 70)
-        print("ТЕСТ FBT-010: Валидация граничных значений")
+        print("TEST FBT-010: Boundary values validation")
         print("=" * 70)
 
         try:
             if not self.open_transfer_form():
-                return self.log_test_result("FBT-010", "Открытие формы", False, "Не удалось открыть форму")
+                return self.log_test_result("FBT-010", "Form opening", False, "Failed to open form")
 
             if not self.enter_card_number_and_proceed():
-                return self.log_test_result("FBT-010", "Ввод карты и переход", False,
-                                            "Не удалось ввести карту или перейти к сумме")
+                return self.log_test_result("FBT-010", "Card input and proceed", False, "Failed to enter card or proceed to amount")
 
             self.enter_amount("0")
             zero_accepted = self.is_transfer_possible()
 
             if not self.find_and_focus_amount_field():
-                return self.log_test_result("FBT-010", "Поиск поля суммы", False, "Не удалось найти поле для суммы")
+                return self.log_test_result("FBT-010", "Amount field search", False, "Failed to find amount field")
 
             amount_input = self.driver.switch_to.active_element
             amount_input.clear()
             amount_input.send_keys("-100")
-            time.sleep(1)
+            self.wait.until(lambda driver: amount_input.get_attribute('value') != "")
             negative_value = amount_input.get_attribute('value')
             negative_accepted = "-100" in negative_value if negative_value else False
 
@@ -394,25 +377,26 @@ class FBankAutotests:
 
             validation_errors = []
             if zero_accepted:
-                validation_errors.append("система принимает 0 ₽")
+                validation_errors.append("system accepts 0 RUB")
             if negative_accepted:
-                validation_errors.append("система принимает отрицательные суммы")
+                validation_errors.append("system accepts negative amounts")
 
             if validation_errors:
-                return self.log_test_result("FBT-010", "Валидация сумм", False,
-                                            f"Ошибки: {', '.join(validation_errors)}")
+                return self.log_test_result("FBT-010", "Amount validation", False, f"Errors: {', '.join(validation_errors)}")
             else:
-                return self.log_test_result("FBT-010", "Валидация сумм", True, "Валидация работает корректно")
+                return self.log_test_result("FBT-010", "Amount validation", True, "Validation works correctly")
 
         except Exception as e:
-            return self.log_test_result("FBT-010", "Выполнение теста", False, f"Ошибка: {e}")
+            return self.log_test_result("FBT-010", "Test execution", False, f"Error: {e}")
 
     def run_all_tests(self):
-        print("АВТОМАТИЗИРОВАННОЕ ТЕСТИРОВАНИЕ F-BANK")
+        print("AUTOMATED F-BANK TESTING")
+        print("=" * 70)
+        print("Based on manual tests Berezhnaya_SECOND.md")
         print("=" * 70)
 
         if not self.setup():
-            print("Не удалось инициализировать тестовое окружение")
+            print("Failed to initialize test environment")
             return False
 
         try:
@@ -423,27 +407,27 @@ class FBankAutotests:
             self.test_010_validation_boundary_values()
 
             print("\n" + "=" * 70)
-            print("ИТОГИ ТЕСТИРОВАНИЯ")
+            print("TESTING RESULTS")
             print("=" * 70)
 
             passed = 0
             for result in self.results:
                 print(result)
-                if "ПРОЙДЕН" in result:
+                if "PASSED" in result:
                     passed += 1
 
             total = len(self.results)
-            print(f"\nРезультат: {passed}/{total} тестов пройдено")
+            print(f"\nResult: {passed}/{total} tests passed")
 
             if passed == total:
-                print("Все тесты пройдены успешно!")
+                print("All tests passed successfully!")
             else:
-                print("Найдены проблемы, требующие исправления")
+                print("Found issues requiring fixes")
 
             return passed == total
 
         except Exception as e:
-            print(f"Критическая ошибка при выполнении тестов: {e}")
+            print(f"Critical error during test execution: {e}")
             return False
         finally:
             self.teardown()
