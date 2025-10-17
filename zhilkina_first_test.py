@@ -18,28 +18,28 @@ class TestFBank:
         self.driver.quit()
 
     def test_1_page_loading(self, setup):
-        """Тест 1: Загрузка страницы и основные элементы"""
-        # Проверяем заголовок страницы
+        """Test 1: Page loading and basic elements"""
+        # Check page title
         assert "F-Bank" in self.driver.title
 
-        # Проверяем наличие корневого элемента
+        # Check root element presence
         root_element = self.wait.until(
             EC.presence_of_element_located((By.ID, "root"))
         )
         assert root_element.is_displayed()
 
-        # Ждем загрузки контента приложения с использованием явного ожидания
+        # Wait for application content loading with explicit wait
         self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#root > *"))
         )
         
-        # Проверяем наличие контента внутри root
+        # Check content inside root
         app_content = self.driver.find_elements(By.CSS_SELECTOR, "#root > *")
         assert len(app_content) > 0
 
     def test_2_interface_display(self, setup):
-        """Тест 2: Отображение элементов интерфейса"""
-        # Проверяем основные элементы интерфейса с явными ожиданиями
+        """Test 2: Interface elements display"""
+        # Check main interface elements with explicit waits
         elements_to_check = [
             (By.TAG_NAME, "header"),
             (By.TAG_NAME, "main"), 
@@ -53,48 +53,49 @@ class TestFBank:
             assert element.is_displayed()
 
     def test_3_button_interaction(self, setup):
-        """Тест 3: Взаимодействие с кнопками"""
-        # Ищем все кнопки на странице
+        """Test 3: Button interaction"""
+        # Find all buttons on page
         buttons = self.wait.until(
             EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
         )
         assert len(buttons) > 0
         
-        # Проверяем, что кнопки кликабельны
-        for button in buttons[:2]:  # Проверяем первые 2 кнопки
+        # Check that buttons are clickable
+        for button in buttons[:2]:  # Check first 2 buttons
             assert button.is_displayed()
             assert button.is_enabled()
 
     def test_4_input_fields(self, setup):
-        """Тест 4: Проверка полей ввода"""
-        # Ищем поля ввода
+        """Test 4: Input fields verification"""
+        # Find input fields
         inputs = self.wait.until(
             EC.presence_of_all_elements_located((By.TAG_NAME, "input"))
         )
         
         if len(inputs) > 0:
-            # Проверяем первое поле ввода
+            # Check first input field
             input_field = inputs[0]
             assert input_field.is_displayed()
             assert input_field.is_enabled()
             
-            # Тестируем ввод текста
+            # Test text input
             test_text = "test"
             input_field.clear()
             input_field.send_keys(test_text)
             
-            # Проверяем, что текст введен
+            # Verify text was entered
             assert input_field.get_attribute("value") == test_text
 
     def test_5_page_navigation(self, setup):
-        """Тест 5: Навигация по странице"""
-        # Проверяем текущий URL
+        """Test 5: Page navigation"""
+        # Check current URL
         current_url = self.driver.current_url
         assert "localhost" in current_url or "3000" in current_url
         
+        # Navigate to URL instead of using refresh
         self.driver.get("http://localhost:3000")
         
-        # Проверяем, что страница загрузилась после навигации
+        # Verify page loaded after navigation
         root_element = self.wait.until(
             EC.presence_of_element_located((By.ID, "root"))
         )
