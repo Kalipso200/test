@@ -5,7 +5,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-import time
 
 class TestFBank:
     @pytest.fixture(scope="function")
@@ -28,7 +27,7 @@ class TestFBank:
         )
         assert root_element.is_displayed()
 
-        # Wait for application content loading with explicit wait
+        # Use explicit wait for application content instead of time.sleep
         self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#root > *"))
         )
@@ -92,10 +91,10 @@ class TestFBank:
         current_url = self.driver.current_url
         assert "localhost" in current_url or "3000" in current_url
         
-        # Navigate to URL instead of using refresh
+        # Use URL navigation instead of refresh
         self.driver.get("http://localhost:3000")
         
-        # Verify page loaded after navigation
+        # Verify page loaded after navigation using explicit wait
         root_element = self.wait.until(
             EC.presence_of_element_located((By.ID, "root"))
         )
